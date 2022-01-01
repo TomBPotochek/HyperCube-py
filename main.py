@@ -180,11 +180,12 @@ def main():
 if __name__ == '__main__':
     import cProfile
     import pstats
+    main()
 
-    with cProfile.Profile() as pr:
-        main()
+    # with cProfile.Profile() as pr:
+    #     main()
     
-    stats = pstats.Stats(pr)
-    stats.sort_stats(pstats.SortKey.TIME)
-    #stats.print_stats(10)
-    stats.dump_stats(filename='profiling_stats.prof')
+    # stats = pstats.Stats(pr)
+    # stats.sort_stats(pstats.SortKey.TIME)
+    # #stats.print_stats(10)
+    # stats.dump_stats(filename='profiling_stats.prof')
