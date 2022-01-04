@@ -11,7 +11,8 @@ from math import comb, cos, sin
 from itertools import product, takewhile, count
 
 
-
+# vetices de cubo 4D agrupado por cantidad de 1s 
+# (primero solo -1s, segundo grupo un 1, etc)
 vertices = np.array([(-1, -1, -1, -1), #0
                      
                      (-1, -1, -1,  1), #1
@@ -34,6 +35,9 @@ vertices = np.array([(-1, -1, -1, -1), #0
                      ( 1,  1,  1,  1)], dtype=precision #15
                     ) 
 
+# set de tuplas que representan los lados del cubo 4D.
+# ej: (0, 1) indica que el segmento que une al vertice 0 con el vertice 1
+# forman un lado.
 sides = {
     (0,1), (0,2),
     (0,3), (0,4),
@@ -53,9 +57,15 @@ sides = {
     (13,15), (14,15)
 }
 
+# representa la "luz" de donde se emiten los rayos.
 light = np.empty([len(vertices), dimensions], dtype=precision)
 light[:] = [0,0,0,3]
 
+# representa el plano en 4D al que se le proyectará el cubo 4D.
+# esta representado por un punto en el espacio (el punto [0, 0, 0, -3])
+# y un vector normal al plano, 
+# pero el vector normal no esta explicitado. esta implicito que es el vector
+# [0, 0, 0, 1]
 hyperplane = np.empty([len(vertices), dimensions], dtype=precision)
 hyperplane[:] = [0,0,0,-3]
 
@@ -67,7 +77,13 @@ def gen_cube_verts(dimension: int, precision):
 
 
 def gen_cube_sides(vertices: np.ndarray):
-    ones = np.sum(vertices, axis=1) 
+    """
+    Usa un algoritmo similar al algoritmo de Quine-McCluskey 
+    para ir armando los lados en algo entre O(n) y O(n^2), dado que 
+    los vertices esten ordenados según la cantidad de 1s.
+    """
+    ones = np.sum(vertices, axis=1) # la diferencia entre la 
+                                    # cantidad de 1s y -1s
     sorted_ind = ones.argsort()
     ones = ones[sorted_ind[::]]
     vertices = vertices[sorted_ind[::]]
@@ -77,6 +93,9 @@ def gen_cube_sides(vertices: np.ndarray):
     maxIndex = len(vertices)-1
     for i, group in enumerate(ones):
         try:
+        # queremos el primer vertice del proximo grupo
+        # la diferencia entre 2 grupos consecutivos siempre es 2
+        # porque se cambia un 1 por un -1.
             firstDifferent = np.where(ones==group+2)[0][0]
         except IndexError:
             firstDifferent = maxIndex
@@ -100,6 +119,10 @@ def get_rot(t: float):
 
 
 def npsumdot(x, y):
+    """
+    hace el producto interno entre las filas de x con las filas
+    de y.
+    """
     return np.sum(x*y, axis=1)[:, np.newaxis]
 
 def calculate_3dCoords(coords_4d: np.ndarray, rotation_angle: float = 0):
@@ -108,10 +131,11 @@ def calculate_3dCoords(coords_4d: np.ndarray, rotation_angle: float = 0):
     mat = get_rot(rotation_angle)
     v = np.dot(mat, coords_4d.T).T
     r = v - light
-    #r /= np.linalg.norm(r, axis=1)[:, np.newaxis]
+    #r /= np.linalg.norm(r, axis=1)[:, np.newaxis] # normalizar es innecesario
 
     n = np.copy(hyperplane)
-    n[:,3] = 1
+    n[:,3] = 1 # aqui creamos la normal al plano. lo correcto es que apunte en 
+               # dirección de la luz, con el cubo entre ambos.
     t = npsumdot(n,hyperplane)
     temp = npsumdot(r,n)
     t = t/temp
